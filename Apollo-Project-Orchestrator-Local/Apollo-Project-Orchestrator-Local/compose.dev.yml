@@ -1,0 +1,164 @@
+# docker-compose.dev.yml - Apollo Project Orchestrator (Desenvolvimento)
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # BACKEND API - DESENVOLVIMENTO
+  # ==========================================================================
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: apollo-backend-dev
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://apollo:apollo123@postgres:5432/apollo_dev
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=dev-secret-key-not-secure
+      - JWT_SECRET_KEY=dev-jwt-secret
+    ports:
+      - "5000:5000"
+    volumes:
+      # Bind mount para hot reload
+      - ./backend:/app
+      - /app/.venv  # Excluir virtual env do bind mount
+      - /app/__pycache__  # Excluir cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - apollo-dev-network
+    command: ["flask", "run", "--host=0.0.0.0", "--port=5000", "--debug"]
+
+  # ==========================================================================
+  # POSTGRESQL DATABASE - DESENVOLVIMENTO
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: apollo-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apollo_dev
+      POSTGRES_USER: apollo
+      POSTGRES_PASSWORD: apollo123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      # Scripts de inicialização para desenvolvimento
+      - ./backend/docker/init-dev.sql:/docker-entrypoint-initdb.d/init-dev.sql:ro
+    networks:
+      - apollo-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apollo -d apollo_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # REDIS CACHE - DESENVOLVIMENTO
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: apollo-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - apollo-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================================================
+  # ADMINER - INTERFACE WEB PARA BANCO (DESENVOLVIMENTO)
+  # ==========================================================================
+  adminer:
+    image: adminer:latest
+    container_name: apollo-adminer-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - apollo-dev-network
+
+  # ==========================================================================
+  # REDIS COMMANDER - INTERFACE WEB PARA REDIS (DESENVOLVIMENTO)
+  # ==========================================================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: apollo-redis-commander-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - apollo-dev-network
+
+  # ==========================================================================
+  # MAILHOG - SERVIDOR DE EMAIL PARA TESTES (DESENVOLVIMENTO)
+  # ==========================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: apollo-mailhog-dev
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - apollo-dev-network
+
+  # ==========================================================================
+  # FRONTEND - DESENVOLVIMENTO (HOT RELOAD)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: apollo-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Excluir node_modules do bind mount
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Para hot reload no Windows/Docker
+    networks:
+      - apollo-dev-network
+    depends_on:
+      - backend
+
+# =============================================================================
+# VOLUMES PARA DESENVOLVIMENTO
+# =============================================================================
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS PARA DESENVOLVIMENTO
+# =============================================================================
+networks:
+  apollo-dev-network:
+    driver: bridge

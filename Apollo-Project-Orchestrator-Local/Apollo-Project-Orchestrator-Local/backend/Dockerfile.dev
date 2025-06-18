@@ -1,0 +1,46 @@
+# Dockerfile para desenvolvimento do Apollo Project Orchestrator Backend
+FROM python:3.11-slim
+
+# Metadata
+LABEL maintainer="Apollo Team <admin@apollo.com>"
+LABEL version="1.0.0-dev"
+LABEL description="Apollo Project Orchestrator Backend - Development"
+
+# Configurar variáveis de ambiente para desenvolvimento
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_ENV=development \
+    FLASK_DEBUG=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    postgresql-client \
+    curl \
+    wget \
+    git \
+    vim \
+    htop \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configurar diretório de trabalho
+WORKDIR /app
+
+# Copiar requirements e instalar dependências de desenvolvimento
+COPY requirements/ requirements/
+RUN pip install --upgrade pip && \
+    pip install -r requirements/dev.txt
+
+# Instalar watchdog para hot reload
+RUN pip install watchdog[watchmedo]
+
+# Criar diretórios necessários
+RUN mkdir -p logs uploads instance static
+
+# Expor porta
+EXPOSE 5000
+
+# Comando padrão para desenvolvimento com hot reload
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000", "--debug"]

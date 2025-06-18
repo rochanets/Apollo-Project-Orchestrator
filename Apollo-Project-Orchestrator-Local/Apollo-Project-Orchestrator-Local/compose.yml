@@ -1,0 +1,160 @@
+# docker-compose.yml - Apollo Project Orchestrator (Produção)
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # BACKEND API
+  # ==========================================================================
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_ENV: production
+        WORKERS: 4
+    container_name: apollo-backend
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://apollo:${POSTGRES_PASSWORD:-apollo123}@postgres:5432/apollo_db
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-${SECRET_KEY}}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - SENTRY_DSN=${SENTRY_DSN}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+      - ./backend/instance:/app/instance
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - apollo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # POSTGRESQL DATABASE
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: apollo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: apollo_db
+      POSTGRES_USER: apollo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apollo123}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/docker/init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - apollo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apollo -d apollo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==========================================================================
+  # REDIS CACHE
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: apollo-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./backend/docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - apollo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  # ==========================================================================
+  # NGINX REVERSE PROXY
+  # ==========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: apollo-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - apollo-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # FRONTEND (OPCIONAL - se quiser servir via Docker)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: apollo-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-5000}/api
+      - REACT_APP_ENV=production
+    networks:
+      - apollo-network
+    depends_on:
+      - backend
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  apollo-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
