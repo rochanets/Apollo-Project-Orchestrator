@@ -1,29 +1,229 @@
-const API_BASE_URL = 'http://localhost:5000/api/auth';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 export const ApiService = {
-  login: async (data) => {
+  // Health check
+  async health() {
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return await response.json();
+      const response = await fetch(`${API_BASE_URL}/health`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return { success: true, data };
     } catch (error) {
-      return { error: 'Erro ao conectar com a API.' };
+      console.error('Health check failed:', error);
+      return { error: error.message };
     }
   },
 
-  register: async (data) => {
+  // Login
+  async login(credentials) {
     try {
-      const response = await fetch(`${API_BASE_URL}/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
       });
-      return await response.json();
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro no login' };
+      }
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
+        message: data.message
+      };
     } catch (error) {
-      return { error: 'Erro ao conectar com a API.' };
+      console.error('Login error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  // Register
+  async register(userData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro no cadastro' };
+      }
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
+        message: data.message
+      };
+    } catch (error) {
+      console.error('Register error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  // Verify token
+  async verifyToken(token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Token inválido' };
+      }
+
+      return {
+        success: true,
+        user: data.user
+      };
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  // Projects
+  async getProjects(token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/projects`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro ao carregar projetos' };
+      }
+
+      return { success: true, projects: data };
+    } catch (error) {
+      console.error('Get projects error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  async createProject(projectData, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/projects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro ao criar projeto' };
+      }
+
+      return {
+        success: true,
+        project: data.project,
+        message: data.message
+      };
+    } catch (error) {
+      console.error('Create project error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  async updateProject(projectId, projectData, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro ao atualizar projeto' };
+      }
+
+      return {
+        success: true,
+        project: data.project,
+        message: data.message
+      };
+    } catch (error) {
+      console.error('Update project error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  async deleteProject(projectId, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro ao excluir projeto' };
+      }
+
+      return {
+        success: true,
+        message: data.message
+      };
+    } catch (error) {
+      console.error('Delete project error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
+
+  // AI Analysis
+  async analyzeDocuments(token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.message || 'Erro na análise da IA' };
+      }
+
+      return { success: true, analysis: data };
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      return { error: 'Erro de conexão com o servidor' };
     }
   }
 };

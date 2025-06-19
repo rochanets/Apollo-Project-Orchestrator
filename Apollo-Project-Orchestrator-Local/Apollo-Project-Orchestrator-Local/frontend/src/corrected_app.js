@@ -1,111 +1,134 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button.jsx';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Progress } from '@/components/ui/progress.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
+import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
 import { 
+  CheckCircle, 
+  Circle, 
   FolderOpen, 
   Plus, 
+  Settings,
+  User,
+  FileText,
+  Upload,
+  MessageSquare,
+  Database,
+  Code,
+  TestTube,
+  Rocket,
   Trash2,
   Edit,
   Calendar,
   Clock,
-  LogOut,
-  User
+  ArrowLeft,
+  FileUp,
+  X,
+  Brain,
+  Loader2
 } from 'lucide-react';
 import apolloLogo from './assets/apollo-logo.png';
 import CreateProjectModal from './components/CreateProjectModal.jsx';
 import ProjectWorkspace from './components/ProjectWorkspace.jsx';
 import { ApiService } from './services/api.js';
-import { useAuth } from './contexts/AuthContext';
 import './App.css';
 
 // Dados das etapas do projeto
 const projectSteps = [
-  { id: 0, title: 'Cadastro do Projeto', icon: 'FileText', description: 'Informações básicas do projeto' },
-  { id: 1, title: 'Upload de Documentos', icon: 'Upload', description: 'Anexar documentação do projeto' },
-  { id: 2, title: 'Geração de Perguntas', icon: 'MessageSquare', description: 'IA gera perguntas críticas' },
-  { id: 3, title: 'Coleta de Informações', icon: 'Database', description: 'Documentação e esclarecimentos' },
-  { id: 4, title: 'Análise Técnica', icon: 'Settings', description: 'Levantamento do ambiente' },
-  { id: 5, title: 'Execução do Projeto', icon: 'Code', description: 'Desenvolvimento automatizado' },
-  { id: 6, title: 'Testes', icon: 'TestTube', description: 'Testes integrados e correções' },
-  { id: 7, title: 'Go Live', icon: 'Rocket', description: 'Documentação final e deploy' }
+  { id: 0, title: 'Cadastro do Projeto', icon: FileText, description: 'Informações básicas do projeto' },
+  { id: 1, title: 'Upload de Documentos', icon: Upload, description: 'Anexar documentação do projeto' },
+  { id: 2, title: 'Geração de Perguntas', icon: MessageSquare, description: 'IA gera perguntas críticas' },
+  { id: 3, title: 'Coleta de Informações', icon: Database, description: 'Documentação e esclarecimentos' },
+  { id: 4, title: 'Análise Técnica', icon: Settings, description: 'Levantamento do ambiente' },
+  { id: 5, title: 'Execução do Projeto', icon: Code, description: 'Desenvolvimento automatizado' },
+  { id: 6, title: 'Testes', icon: TestTube, description: 'Testes integrados e correções' },
+  { id: 7, title: 'Go Live', icon: Rocket, description: 'Documentação final e deploy' }
+];
+
+// Dados de exemplo para projetos (simulando dados do backend)
+const initialMockProjects = [
+  {
+    id: 1,
+    name: 'Sistema de Gestão Comercial',
+    client: 'Empresa ABC',
+    responsible: 'João Silva',
+    objective: 'Desenvolver sistema para gestão de vendas e estoque',
+    description: 'Sistema completo para controle de vendas, estoque e relatórios gerenciais',
+    status: 'active',
+    priority: 'high',
+    current_step: 2,
+    start_date: '2024-01-15',
+    deadline: '2024-06-15',
+    created_at: '2024-01-15T10:00:00Z',
+    uploaded_files: [
+      {
+        id: 1,
+        name: 'Requisitos_Sistema_Gestao.pdf',
+        size: 2048576,
+        type: 'application/pdf',
+        uploadDate: '2024-01-15T10:30:00Z'
+      },
+      {
+        id: 2,
+        name: 'Especificacoes_Tecnicas.docx',
+        size: 1024000,
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        uploadDate: '2024-01-15T11:00:00Z'
+      }
+    ],
+    ai_questions: [],
+    ai_analysis: null
+  },
+  {
+    id: 2,
+    name: 'Portal do Cliente',
+    client: 'Empresa XYZ',
+    responsible: 'Maria Santos',
+    objective: 'Portal web para autoatendimento de clientes',
+    description: 'Plataforma online para que clientes possam acessar informações e serviços',
+    status: 'active',
+    priority: 'medium',
+    current_step: 4,
+    start_date: '2024-01-10',
+    deadline: '2024-05-10',
+    created_at: '2024-01-10T14:30:00Z',
+    uploaded_files: [
+      {
+        id: 3,
+        name: 'Wireframes_Portal.pdf',
+        size: 3072000,
+        type: 'application/pdf',
+        uploadDate: '2024-01-10T15:00:00Z'
+      }
+    ],
+    ai_questions: [],
+    ai_analysis: null
+  }
 ];
 
 function App() {
-  const { user, logout } = useAuth();
-  
-  // Estados principais da aplicação
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [currentStep, setCurrentStep] = useState(0);
+  // Estados principais
+  const [projects, setProjects] = useState(initialMockProjects);
+  const [selectedProject, setSelectedProject] = useState(initialMockProjects[0]);
+  const [currentStep, setCurrentStep] = useState(initialMockProjects[0]?.current_step || 0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [backendStatus, setBackendStatus] = useState('checking');
-  const [loading, setLoading] = useState(true);
 
   // Verificação de status do backend
   useEffect(() => {
     const checkBackend = async () => {
-      try {
-        const health = await ApiService.health();
-        setBackendStatus(health.error ? 'offline' : 'online');
-      } catch (error) {
-        setBackendStatus('offline');
-      }
+      const health = await ApiService.health();
+      setBackendStatus(health.error ? 'offline' : 'online');
     };
     
     checkBackend();
+    
+    // Verificar a cada 30 segundos
     const interval = setInterval(checkBackend, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  // Carregar projetos do usuário
-  useEffect(() => {
-    loadUserProjects();
-  }, []);
-
-  const loadUserProjects = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('apollo_token');
-      
-      if (!token) {
-        setProjects([]);
-        setSelectedProject(null);
-        return;
-      }
-
-      const result = await ApiService.getProjects(token);
-      
-      if (result.success) {
-        setProjects(result.projects);
-        
-        // Se há projetos e nenhum está selecionado, selecionar o primeiro
-        if (result.projects.length > 0 && !selectedProject) {
-          setSelectedProject(result.projects[0]);
-          setCurrentStep(result.projects[0].current_step || 0);
-        }
-        
-        // Se o projeto selecionado não está mais na lista, selecionar o primeiro
-        if (selectedProject && !result.projects.find(p => p.id === selectedProject.id)) {
-          if (result.projects.length > 0) {
-            setSelectedProject(result.projects[0]);
-            setCurrentStep(result.projects[0].current_step || 0);
-          } else {
-            setSelectedProject(null);
-            setCurrentStep(0);
-          }
-        }
-      } else {
-        console.error('Erro ao carregar projetos:', result.error);
-        setProjects([]);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar projetos:', error);
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Atualizar currentStep quando selectedProject mudar
   useEffect(() => {
@@ -114,55 +137,44 @@ function App() {
     }
   }, [selectedProject?.id]);
 
-  const handleProjectCreated = async (projectData, isEditing = false) => {
-    const token = localStorage.getItem('apollo_token');
-    
-    try {
-      let result;
+  const handleProjectCreated = (projectData, isEditing = false) => {
+    if (isEditing) {
+      // Atualizar projeto existente
+      const updatedProjects = projects.map(p => 
+        p.id === projectData.id ? projectData : p
+      );
+      setProjects(updatedProjects);
       
-      if (isEditing) {
-        result = await ApiService.updateProject(projectData.id, projectData, token);
-      } else {
-        result = await ApiService.createProject(projectData, token);
+      if (selectedProject && selectedProject.id === projectData.id) {
+        setSelectedProject(projectData);
       }
+    } else {
+      // Criar novo projeto
+      const newProject = {
+        ...projectData,
+        id: Date.now(),
+        current_step: 0,
+        uploaded_files: [],
+        ai_questions: [],
+        ai_analysis: null
+      };
       
-      if (result.success) {
-        await loadUserProjects();
-        
-        // Se for um novo projeto, selecionar automaticamente
-        if (!isEditing && result.project) {
-          setSelectedProject(result.project);
-          setCurrentStep(result.project.current_step || 0);
-        }
-      } else {
-        console.error('Erro ao salvar projeto:', result.error);
-        alert(`Erro ao salvar projeto: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Erro ao salvar projeto:', error);
-      alert('Erro de conexão ao salvar projeto');
+      const updatedProjects = [...projects, newProject];
+      setProjects(updatedProjects);
+      setSelectedProject(newProject);
     }
     
     setShowCreateModal(false);
     setEditingProject(null);
   };
 
-  const handleDeleteProject = async (projectId) => {
+  const handleDeleteProject = (projectId) => {
     if (window.confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
-      const token = localStorage.getItem('apollo_token');
+      const updatedProjects = projects.filter(p => p.id !== projectId);
+      setProjects(updatedProjects);
       
-      try {
-        const result = await ApiService.deleteProject(projectId, token);
-        
-        if (result.success) {
-          await loadUserProjects();
-        } else {
-          console.error('Erro ao excluir projeto:', result.error);
-          alert(`Erro ao excluir projeto: ${result.error}`);
-        }
-      } catch (error) {
-        console.error('Erro ao excluir projeto:', error);
-        alert('Erro de conexão ao excluir projeto');
+      if (selectedProject && selectedProject.id === projectId) {
+        setSelectedProject(updatedProjects[0] || null);
       }
     }
   };
@@ -177,44 +189,23 @@ function App() {
     updateProjectStep(newStep);
   };
 
-  const updateProjectStep = async (step) => {
+  const updateProjectStep = (step) => {
     if (selectedProject) {
-      const token = localStorage.getItem('apollo_token');
-      
-      try {
-        const result = await ApiService.updateProject(
-          selectedProject.id, 
-          { ...selectedProject, current_step: step }, 
-          token
-        );
-        
-        if (result.success) {
-          await loadUserProjects();
-        } else {
-          console.error('Erro ao atualizar etapa:', result.error);
-        }
-      } catch (error) {
-        console.error('Erro ao atualizar etapa:', error);
-      }
+      const updatedProject = { ...selectedProject, current_step: step };
+      const updatedProjects = projects.map(p => 
+        p.id === selectedProject.id ? updatedProject : p
+      );
+      setProjects(updatedProjects);
+      setSelectedProject(updatedProject);
     }
   };
 
-  const handleProjectUpdate = async (updatedProject) => {
-    const token = localStorage.getItem('apollo_token');
-    
-    try {
-      const result = await ApiService.updateProject(
-        updatedProject.id, 
-        updatedProject, 
-        token
-      );
-      
-      if (result.success) {
-        await loadUserProjects();
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar projeto:', error);
-    }
+  const handleProjectUpdate = (updatedProject) => {
+    const updatedProjects = projects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    );
+    setProjects(updatedProjects);
+    setSelectedProject(updatedProject);
   };
 
   const formatDate = (dateString) => {
@@ -241,72 +232,31 @@ function App() {
     }
   };
 
-  // Loading screen
-  if (loading) {
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'Urgente';
+      case 'high': return 'Alta';
+      case 'medium': return 'Média';
+      case 'low': return 'Baixa';
+      default: return 'Não definida';
+    }
+  };
+
+  if (!selectedProject) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <img src={apolloLogo} alt="Apollo" className="h-16 w-16 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-600">Carregando projetos...</p>
+          <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Nenhum projeto selecionado</h2>
+          <p className="text-gray-600 mb-6">Crie um novo projeto para começar</p>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-orange-500 hover:bg-orange-600 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Criar Projeto
+          </Button>
         </div>
-      </div>
-    );
-  }
-
-  // Tela principal se não há projetos
-  if (!selectedProject && projects.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-4">
-                <img src={apolloLogo} alt="Apollo" className="h-10 w-10" />
-                <div>
-                  <h1 className="text-xl font-bold text-orange-600">Apollo Project Orchestrator</h1>
-                  <p className="text-sm text-gray-600">Gestão Inteligente de Projetos</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-700">{user?.name}</span>
-                </div>
-                <Button
-                  onClick={logout}
-                  variant="outline"
-                  size="sm"
-                  className="text-gray-600 hover:text-red-600"
-                >
-                  <LogOut className="h-4 w-4 mr-1" />
-                  Sair
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-          <div className="text-center">
-            <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Bem-vindo ao Apollo!</h2>
-            <p className="text-gray-600 mb-6">Você ainda não tem projetos. Crie seu primeiro projeto para começar.</p>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Primeiro Projeto
-            </Button>
-          </div>
-        </div>
-
-        <CreateProjectModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onProjectCreated={handleProjectCreated}
-        />
       </div>
     );
   }
@@ -319,7 +269,7 @@ function App() {
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                ⚠️ Backend desconectado - Funcionando em modo offline
+                ⚠️ Backend desconectado - Funcionando em modo offline com dados simulados
               </p>
             </div>
           </div>
@@ -337,20 +287,8 @@ function App() {
                 <p className="text-sm text-gray-600">Gestão Inteligente de Projetos</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-700">{user?.name}</span>
-              </div>
-              <Button
-                onClick={logout}
-                variant="outline"
-                size="sm"
-                className="text-gray-600 hover:text-red-600"
-              >
-                <LogOut className="h-4 w-4 mr-1" />
-                Sair
-              </Button>
+            <div className="text-right">
+              <h2 className="text-lg font-semibold text-gray-900">Sistema de Gestão de Projetos</h2>
             </div>
           </div>
         </div>
@@ -453,7 +391,7 @@ function App() {
                     <div className="flex items-center space-x-1">
                       <div className={`w-2 h-2 rounded-full ${getPriorityColor(project.priority)}`}></div>
                       <span className={`text-xs ${isSelected ? 'text-orange-700' : 'text-gray-400'}`}>
-                        Etapa {(project.current_step || 0) + 1}
+                        Etapa {project.current_step + 1}
                       </span>
                     </div>
                   </div>
