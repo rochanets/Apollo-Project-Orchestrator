@@ -3,12 +3,26 @@ Application Factory para o Apollo Project Orchestrator - CORRIGIDO
 """
 
 import os
+import sys
 import logging
+from pathlib import Path
 from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
 
-from src.config import get_config
-from src.extensions import db, migrate, jwt, cors, cache, limiter, mail
+# Adicionar o diretório pai ao Python path para importações absolutas
+if __name__ == '__main__':
+    current_dir = Path(__file__).parent
+    backend_dir = current_dir.parent
+    sys.path.insert(0, str(backend_dir))
+
+try:
+    # Tentar importação relativa (quando usado como módulo)
+    from .config import get_config
+    from .extensions import db, migrate, jwt, cors, cache, limiter, mail
+except ImportError:
+    # Fallback para importação absoluta (quando executado diretamente)
+    from config import get_config
+    from extensions import db, migrate, jwt, cors, cache, limiter, mail
 
 
 def create_app(config_name=None):
@@ -79,10 +93,18 @@ def create_app(config_name=None):
 def register_blueprints(app):
     """Registrar todos os blueprints da aplicação"""
     
-    from src.routes.auth import auth_bp
-    from src.routes.projects import projects_bp
-    from src.routes.users import users_bp
-    from src.routes.ai import ai_bp
+    try:
+        # Tentar importação relativa primeiro
+        from .routes.auth import auth_bp
+        from .routes.projects import projects_bp
+        from .routes.users import users_bp
+        from .routes.ai import ai_bp
+    except ImportError:
+        # Fallback para importação absoluta
+        from routes.auth import auth_bp
+        from routes.projects import projects_bp
+        from routes.users import users_bp
+        from routes.ai import ai_bp
     
     # Registrar blueprints com prefixos
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -186,7 +208,10 @@ def register_commands(app):
     @app.cli.command()
     def create_admin():
         """Criar usuário administrador"""
-        from src.models.database import User
+        try:
+            from .models.database import User
+        except ImportError:
+            from models.database import User
         from werkzeug.security import generate_password_hash
         
         email = input("Email do administrador: ")
@@ -213,9 +238,15 @@ def register_commands(app):
     @app.cli.command()
     def seed_data():
         """Popular banco com dados de exemplo"""
-        from src.utils.seed import seed_database
-        seed_database()
-        print("Dados de exemplo criados!")
+        try:
+            try:
+                from .utils.seed import seed_database
+            except ImportError:
+                from utils.seed import seed_database
+            seed_database()
+            print("Dados de exemplo criados!")
+        except ImportError:
+            print("⚠️  Módulo utils.seed não encontrado. Comando não disponível.")
 
 
 def register_hooks(app):
@@ -242,3 +273,13 @@ def register_hooks(app):
         if error:
             db.session.rollback()
         db.session.remove()
+
+
+# Proteção para execução direta
+if __name__ == '__main__':
+    print("⚠️  AVISO: app.py não deve ser executado diretamente!")
+    print("📝 Use o main.py para iniciar o servidor:")
+    print("   python main.py")
+    print("   ou")
+    print("   python -m src.main")
+    sys.exit(1)

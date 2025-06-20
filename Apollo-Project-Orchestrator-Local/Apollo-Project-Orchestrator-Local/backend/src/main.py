@@ -71,14 +71,6 @@ except ImportError:
     except ImportError as e:
         print(f"⚠️  Blueprint Auth não disponível: {e}")
     
-    try:
-        # Tentar usar o modelo da user.py se disponível
-        from src.routes.user import user_bp
-        app.register_blueprint(user_bp, url_prefix='/api')
-        print("✅ Blueprint User (simples) registrado")
-    except ImportError as e:
-        print(f"⚠️  Blueprint User simples não disponível: {e}")
-    
     # Rotas básicas
     @app.route('/')
     @app.route('/health')
@@ -116,11 +108,7 @@ def init_database():
                 from src.models.database import User, Project, ProjectStep, ProjectPermission, AuditLog
                 print("✅ Modelos principais importados")
             except ImportError:
-                try:
-                    from src.models.user import User
-                    print("✅ Modelo User simples importado")
-                except ImportError:
-                    print("⚠️  Nenhum modelo encontrado")
+                print("⚠️  Modelos do database.py não encontrados")
             
             db.create_all()
             print("✅ Banco de dados inicializado")
