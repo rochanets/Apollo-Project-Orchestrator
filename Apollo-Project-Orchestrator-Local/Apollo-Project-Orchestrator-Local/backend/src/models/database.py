@@ -128,7 +128,7 @@ class User(TimestampMixin, db.Model):
             errors.append("Nome deve ter pelo menos 2 caracteres")
         
         # Validar email
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not self.email or not re.match(email_pattern, self.email):
             errors.append("Email inválido")
         
