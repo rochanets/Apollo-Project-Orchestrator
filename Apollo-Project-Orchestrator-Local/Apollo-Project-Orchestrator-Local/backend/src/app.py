@@ -1,14 +1,28 @@
 """
-Application Factory para o Apollo Project Orchestrator
+Application Factory para o Apollo Project Orchestrator - CORRIGIDO
 """
 
 import os
+import sys
 import logging
+from pathlib import Path
 from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
 
-from src.config import get_config
-from src.extensions import db, migrate, jwt, cors, cache, limiter, mail
+# Adicionar o diretório pai ao Python path para importações absolutas
+if __name__ == '__main__':
+    current_dir = Path(__file__).parent
+    backend_dir = current_dir.parent
+    sys.path.insert(0, str(backend_dir))
+
+try:
+    # Tentar importação relativa (quando usado como módulo)
+    from .config import get_config
+    from .extensions import db, migrate, jwt, cors, cache, limiter, mail
+except ImportError:
+    # Fallback para importação absoluta (quando executado diretamente)
+    from config import get_config
+    from extensions import db, migrate, jwt, cors, cache, limiter, mail
 
 
 def create_app(config_name=None):
@@ -79,27 +93,32 @@ def create_app(config_name=None):
 def register_blueprints(app):
     """Registrar todos os blueprints da aplicação"""
     
-    from src.routes.auth import auth_bp
-    from src.routes.projects import projects_bp
-    from src.routes.users import users_bp
-    from src.routes.ai import ai_bp
-    from src.routes.admin import admin_bp
+    try:
+        # Tentar importação relativa primeiro
+        from .routes.auth import auth_bp
+        from .routes.projects import projects_bp
+        from .routes.users import users_bp
+        from .routes.ai import ai_bp
+    except ImportError:
+        # Fallback para importação absoluta
+        from routes.auth import auth_bp
+        from routes.projects import projects_bp
+        from routes.users import users_bp
+        from routes.ai import ai_bp
     
     # Registrar blueprints com prefixos
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(projects_bp, url_prefix='/api/projects')
     app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
     
     # Rota raiz para health check
-    @app.route('/')
-    @app.route('/health')
-    def health_check():
+    @app.route('/api/health')
+    def api_health_check():
         return jsonify({
             'status': 'ok',
-            'message': f'{app.config["APP_NAME"]} está funcionando!',
-            'version': app.config['APP_VERSION'],
+            'message': 'API está funcionando!',
+            'version': app.config.get('APP_VERSION', '1.0.0'),
             'environment': os.environ.get('FLASK_ENV', 'development')
         })
     
@@ -114,8 +133,7 @@ def register_blueprints(app):
                 'auth': '/api/auth',
                 'projects': '/api/projects',
                 'users': '/api/users',
-                'ai': '/api/ai',
-                'admin': '/api/admin'
+                'ai': '/api/ai'
             },
             'docs': '/api/docs'
         })
@@ -189,7 +207,10 @@ def register_commands(app):
     @app.cli.command()
     def create_admin():
         """Criar usuário administrador"""
-        from src.models.database import User
+        try:
+            from .models.database import User
+        except ImportError:
+            from models.database import User
         from werkzeug.security import generate_password_hash
         
         email = input("Email do administrador: ")
@@ -216,18 +237,19 @@ def register_commands(app):
     @app.cli.command()
     def seed_data():
         """Popular banco com dados de exemplo"""
-        from src.utils.seed import seed_database
-        seed_database()
-        print("Dados de exemplo criados!")
+        try:
+            try:
+                from .utils.seed import seed_database
+            except ImportError:
+                from utils.seed import seed_database
+            seed_database()
+            print("Dados de exemplo criados!")
+        except ImportError:
+            print("⚠️  Módulo utils.seed não encontrado. Comando não disponível.")
 
 
 def register_hooks(app):
     """Registrar hooks de request/response"""
-    
-    @app.before_first_request
-    def before_first_request():
-        """Executado antes da primeira requisição"""
-        app.logger.info(f'{app.config["APP_NAME"]} iniciado')
     
     @app.before_request
     def before_request():
@@ -250,3 +272,13 @@ def register_hooks(app):
         if error:
             db.session.rollback()
         db.session.remove()
+
+
+# Proteção para execução direta
+if __name__ == '__main__':
+    print("⚠️  AVISO: app.py não deve ser executado diretamente!")
+    print("📝 Use o main.py para iniciar o servidor:")
+    print("   python main.py")
+    print("   ou")
+    print("   python -m src.main")
+    sys.exit(1)

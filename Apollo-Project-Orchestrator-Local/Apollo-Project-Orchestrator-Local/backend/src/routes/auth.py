@@ -155,11 +155,13 @@ def register():
         user = User(
             name=data['name'].strip(),
             email=data['email'].lower(),
-            password=data['password'],  # Será hasheada pelo setter
             company=data.get('company', '').strip(),
             role=data.get('role', '').strip(),
             user_level='user'  # Novos usuários sempre como 'user'
         )
+
+        # Defina a senha usando o setter
+        user.password = data['password']
         
         # Validar modelo
         user.validate()

@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 
-from src.models.database import db, Project, ProjectPermission, ProjectStep, User, AuditLog
+from src.extensions import db
+from src.models.database import Project, ProjectPermission, ProjectStep, User, AuditLog
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -57,6 +58,7 @@ def has_project_permission(user_id, project_id, required_level='viewer'):
     levels = {'viewer': 1, 'editor': 2, 'owner': 3}
     return levels.get(permission.permission_level, 0) >= levels.get(required_level, 0)
 
+@projects_bp.route('', methods=['GET'])
 @projects_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_projects():
@@ -91,6 +93,7 @@ def get_projects():
     except Exception as e:
         return jsonify({'error': 'Erro interno do servidor'}), 500
 
+@projects_bp.route('', methods=['POST'])
 @projects_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_project():
