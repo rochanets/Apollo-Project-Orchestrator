@@ -105,13 +105,17 @@ def init_database():
         with app.app_context():
             # Importar modelos para garantir que as tabelas sejam criadas
             try:
+                # Importe apenas os modelos, não o db
                 from src.models.database import User, Project, ProjectStep, ProjectPermission, AuditLog
                 print("✅ Modelos principais importados")
-            except ImportError:
-                print("⚠️  Modelos do database.py não encontrados")
-            
-            db.create_all()
-            print("✅ Banco de dados inicializado")
+                
+                # Agora use a instância de db que já está registrada com a app
+                from src.extensions import db
+                db.create_all()
+                print("✅ Banco de dados inicializado")
+                
+            except ImportError as e:
+                print(f"⚠️  Modelos do database.py não encontrados: {e}")
             
     except Exception as e:
         print(f"⚠️  Erro ao inicializar banco: {e}")

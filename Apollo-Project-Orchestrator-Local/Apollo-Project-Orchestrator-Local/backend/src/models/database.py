@@ -2,14 +2,14 @@
 Modelos de dados melhorados para o Apollo Project Orchestrator
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Index, event
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
 
-db = SQLAlchemy()
+from src.extensions import db
 
 # =============================================================================
 # MIXINS
@@ -128,7 +128,7 @@ class User(TimestampMixin, db.Model):
             errors.append("Nome deve ter pelo menos 2 caracteres")
         
         # Validar email
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
         if not self.email or not re.match(email_pattern, self.email):
             errors.append("Email inválido")
         

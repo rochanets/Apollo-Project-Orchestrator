@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 
-from src.models.database import db, Project, ProjectPermission, ProjectStep, User, AuditLog
+from src.extensions import db
+from src.models.database import Project, ProjectPermission, ProjectStep, User, AuditLog
 
 projects_bp = Blueprint('projects', __name__)
 
