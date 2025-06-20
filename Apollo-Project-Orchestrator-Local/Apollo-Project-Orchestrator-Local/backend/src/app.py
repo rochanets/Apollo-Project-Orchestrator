@@ -113,13 +113,12 @@ def register_blueprints(app):
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
     
     # Rota raiz para health check
-    @app.route('/')
-    @app.route('/health')
-    def health_check():
+    @app.route('/api/health')
+    def api_health_check():
         return jsonify({
             'status': 'ok',
-            'message': f'{app.config["APP_NAME"]} está funcionando!',
-            'version': app.config['APP_VERSION'],
+            'message': 'API está funcionando!',
+            'version': app.config.get('APP_VERSION', '1.0.0'),
             'environment': os.environ.get('FLASK_ENV', 'development')
         })
     
