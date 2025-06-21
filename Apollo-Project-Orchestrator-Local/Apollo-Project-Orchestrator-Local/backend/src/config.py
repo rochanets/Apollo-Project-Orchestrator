@@ -28,10 +28,8 @@ class Config:
     # =============================================================================
     # JWT CONFIGURAÇÕES
     # =============================================================================
-    JWT_SECRET_KEY = os.environ.get('SECRET_KEY') or 'jwt-secret-change-me'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
-        minutes=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 60))
-    )
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'your-secret-key'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(
         days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES', 30))
     )
@@ -51,8 +49,10 @@ class Config:
     # =============================================================================
     # CORS E SEGURANÇA
     # =============================================================================
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173').split(',')
+    CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174']
     CORS_SUPPORTS_CREDENTIALS = True
+    CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization']
+    CORS_EXPOSE_HEADERS = ['Authorization']
     
     # =============================================================================
     # UPLOAD CONFIGURAÇÕES

@@ -75,29 +75,31 @@ export const ApiService = {
   },
 
   // Verify token
-  async verifyToken(token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+    async verifyToken(token) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+            method: 'POST', // Mudança importante: deve ser POST
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
 
-      const data = await response.json();
+          if (!response.ok) {
+            const data = await response.json();
+            return { error: data.message || 'Token inválido' };
+          }
 
-      if (!response.ok) {
-        return { error: data.message || 'Token inválido' };
-      }
-
-      return {
-        success: true,
-        user: data.user
-      };
-    } catch (error) {
-      console.error('Token verification error:', error);
-      return { error: 'Erro de conexão com o servidor' };
-    }
-  },
+          const data = await response.json();
+          return {
+            success: true,
+            user: data.user
+          };
+        } catch (error) {
+          console.error('Token verification error:', error);
+          return { error: 'Erro de conexão com o servidor' };
+        }
+      },
 
   // Projects
   async getProjects(token) {
