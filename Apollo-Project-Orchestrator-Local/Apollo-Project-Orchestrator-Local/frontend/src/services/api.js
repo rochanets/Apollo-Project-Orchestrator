@@ -114,7 +114,7 @@ export const ApiService = {
         return { error: data.message || 'Erro ao carregar projetos' };
       }
 
-      return { success: true, projects: data };
+      return { success: true, projects: data.projects };
     } catch (error) {
       console.error('Get projects error:', error);
       return { error: 'Erro de conexão com o servidor' };
