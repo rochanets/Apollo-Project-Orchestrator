@@ -13,8 +13,6 @@ import re
 
 from src.extensions import db, limiter, blacklisted_tokens
 from src.models.database import User, AuditLog
-from src.utils.validators import AuthValidator
-from src.utils.helpers import log_action, get_client_info
 
 auth_bp = Blueprint('auth', __name__)
 
