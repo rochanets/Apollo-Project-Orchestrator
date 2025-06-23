@@ -185,6 +185,7 @@ def register():
         return jsonify({
             'message': 'Usuário cadastrado com sucesso',
             'user': user.to_dict(),
+            'token': access_token,  # Compatibilidade com frontend
             'access_token': access_token,
             'refresh_token': refresh_token
         }), 201
@@ -288,6 +289,7 @@ def login():
         
         return jsonify({
             'message': 'Login realizado com sucesso',
+            'token': access_token,  # Compatibilidade com frontend
             'access_token': access_token,
             'refresh_token': refresh_token,
             'user': user.to_dict()
@@ -296,6 +298,93 @@ def login():
     except Exception as e:
         current_app.logger.error(f"Erro no login: {e}")
         return jsonify({'error': 'Erro interno do servidor'}), 500
+
+# NOVA ROTA - VERIFY TOKEN
+@auth_bp.route('/verify', methods=['POST', 'OPTIONS'])
+def verify_token():
+    """Verificar se o token JWT é válido"""
+    if request.method == 'OPTIONS':
+        # Responder ao preflight request
+        return '', 204
+    
+    try:
+        # Pegar o token do header Authorization
+        auth_header = request.headers.get('Authorization', '')
+        
+        if not auth_header:
+            return jsonify({
+                'success': False,
+                'error': 'Token não fornecido',
+                'message': 'Token não fornecido'
+            }), 401
+        
+        # Extrair o token (formato: "Bearer TOKEN")
+        token = auth_header.replace('Bearer ', '') if auth_header.startswith('Bearer ') else auth_header
+        
+        if not token:
+            return jsonify({
+                'success': False,
+                'error': 'Token inválido',
+                'message': 'Token inválido'
+            }), 401
+        
+        # Verificar o token usando Flask-JWT-Extended
+        from flask_jwt_extended import decode_token
+        
+        try:
+            # Decodificar token
+            decoded = decode_token(token)
+            user_id = decoded.get('sub')  # 'sub' é o campo padrão para identity
+            
+            if not user_id:
+                return jsonify({
+                    'success': False,
+                    'error': 'Token inválido',
+                    'message': 'Token inválido - ID do usuário não encontrado'
+                }), 401
+            
+            # Buscar o usuário no banco
+            user = User.query.get(user_id)
+            
+            if not user:
+                return jsonify({
+                    'success': False,
+                    'error': 'Usuário não encontrado',
+                    'message': 'Usuário não encontrado'
+                }), 401
+            
+            if not user.is_active:
+                return jsonify({
+                    'success': False,
+                    'error': 'Conta desativada',
+                    'message': 'Conta desativada'
+                }), 401
+            
+            return jsonify({
+                'success': True,
+                'valid': True,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'name': user.name
+                }
+            }), 200
+            
+        except Exception as jwt_error:
+            current_app.logger.error(f"Erro ao decodificar token: {jwt_error}")
+            return jsonify({
+                'success': False,
+                'error': 'Token inválido ou expirado',
+                'message': str(jwt_error)
+            }), 401
+            
+    except Exception as e:
+        current_app.logger.error(f"Erro ao verificar token: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Erro ao verificar token',
+            'message': str(e)
+        }), 500
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)

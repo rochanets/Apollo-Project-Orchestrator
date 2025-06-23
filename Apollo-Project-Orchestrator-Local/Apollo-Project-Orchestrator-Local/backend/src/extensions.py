@@ -25,7 +25,19 @@ migrate = Migrate()
 jwt = JWTManager()
 
 # CORS para requisições cross-origin
-cors = CORS()
+cors = CORS(
+    supports_credentials=True,
+    resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Authorization"],
+            "supports_credentials": True,
+            "max_age": 3600
+        }
+    }
+)
 
 # Cache para performance
 cache = Cache()
