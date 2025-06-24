@@ -125,13 +125,19 @@ export const ApiService = {
 
   async createProject(projectData, token) {
     try {
+      // Garantir que o status seja sempre enviado
+      const projectDataWithStatus = {
+        ...projectData,
+        status: projectData.status || 'active'
+      };
+
       const response = await fetch(`${API_BASE_URL}/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(projectData),
+        body: JSON.stringify(projectDataWithStatus),
       });
 
       const data = await response.json();

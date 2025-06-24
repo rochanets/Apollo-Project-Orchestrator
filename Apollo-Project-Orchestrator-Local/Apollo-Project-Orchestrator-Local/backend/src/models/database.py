@@ -555,12 +555,32 @@ def validate_user(mapper, connection, target):
 @event.listens_for(Project, 'before_update')
 def validate_project(mapper, connection, target):
     """Validar projeto antes de inserir/atualizar"""
+    # Aplicar valores padrão se não estiverem definidos
+    if target.status is None:
+        target.status = 'active'
+    if target.priority is None:
+        target.priority = 'medium'
+    if target.current_step is None:
+        target.current_step = 0
+    if target.actual_hours is None:
+        target.actual_hours = 0
+    if target.completion_percentage is None:
+        target.completion_percentage = 0
+    
+    # Agora validar
     target.validate()
 
 @event.listens_for(ProjectStep, 'before_insert')
 @event.listens_for(ProjectStep, 'before_update')
 def validate_project_step(mapper, connection, target):
     """Validar etapa antes de inserir/atualizar"""
+    # Aplicar valores padrão se não estiverem definidos
+    if target.status is None:
+        target.status = 'pending'
+    if target.actual_hours is None:
+        target.actual_hours = 0
+    
+    # Agora validar
     target.validate()
 
 @event.listens_for(ProjectStep, 'after_update')

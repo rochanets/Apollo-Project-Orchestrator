@@ -73,7 +73,11 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
       return;
     }
 
-    onProjectCreated(formData, !!editingProject);
+  const projectDataWithStatus = {
+    ...formData,
+    status: formData.status || 'active'
+  };
+  onProjectCreated(projectDataWithStatus, !!editingProject);
     onClose();
   };
 

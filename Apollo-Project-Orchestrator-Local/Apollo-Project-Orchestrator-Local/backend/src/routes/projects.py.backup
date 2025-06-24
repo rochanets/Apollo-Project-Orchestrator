@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 
@@ -150,14 +150,9 @@ def create_project():
             'project': project.to_dict()
         }), 201
         
-    except ValueError as ve:
-        db.session.rollback()
-        current_app.logger.error(f"Erro de validação ao criar projeto: {ve}")
-        return jsonify({'error': f'Erro de validação: {str(ve)}'}), 400
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Erro interno ao criar projeto: {e}")
-        return jsonify({'error': f'Erro interno do servidor: {str(e)}'}), 500
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()
