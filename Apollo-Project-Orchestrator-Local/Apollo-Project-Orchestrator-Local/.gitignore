@@ -168,6 +168,7 @@ yarn-error.log*
 # Frontend build
 dist/
 build/
+frontend/node_modules/
 
 # Frontend environment
 .env.local
