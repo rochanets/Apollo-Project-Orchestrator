@@ -168,7 +168,7 @@ yarn-error.log*
 # Frontend build
 dist/
 build/
-frontend/node_modules/
+
 
 # Frontend environment
 .env.local
@@ -185,6 +185,9 @@ tmp/
 *.bak
 *.backup
 *.old
+
+# Backend
+backend/*
 
 # SECURITY - NUNCA COMMITAR
 *.key
