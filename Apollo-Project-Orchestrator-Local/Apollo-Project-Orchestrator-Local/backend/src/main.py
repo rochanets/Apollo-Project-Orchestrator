@@ -7,6 +7,8 @@ import os
 import sys
 from pathlib import Path
 
+print(f"DEBUG: Este arquivo main.py está em: {os.path.abspath(__file__)}")
+
 # Adicionar o diretório raiz ao Python path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))

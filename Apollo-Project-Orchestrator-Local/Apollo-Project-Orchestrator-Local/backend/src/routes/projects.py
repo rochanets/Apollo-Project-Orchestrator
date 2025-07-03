@@ -116,11 +116,12 @@ def create_project():
             objective=data['objective'],
             description=data.get('description', ''),
             priority=data.get('priority', 'medium'),
+            status=data.get('status', 'active'),  # ADICIONE ESTA LINHA
             owner_id=current_user_id
         )
         
         db.session.add(project)
-        db.session.flush()  # Para obter o ID do projeto
+        db.session.flush()
         
         # Criar etapas padrão
         for step_data in DEFAULT_STEPS:
@@ -128,7 +129,8 @@ def create_project():
                 project_id=project.id,
                 step_number=step_data['step_number'],
                 step_name=step_data['step_name'],
-                description=step_data['description']
+                description=step_data['description'],
+                status=step_data.get('status', 'pending') # ADICIONE ESTA LINHA
             )
             db.session.add(step)
         

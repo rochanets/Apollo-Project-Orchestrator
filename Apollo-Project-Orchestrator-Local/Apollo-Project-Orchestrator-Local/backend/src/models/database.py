@@ -1,3 +1,6 @@
+import os
+print(f"DEBUG: Este arquivo database.py está em: {os.path.abspath(__file__)}")
+
 """
 Modelos de dados melhorados para o Apollo Project Orchestrator
 """
@@ -240,6 +243,11 @@ class Project(AuditMixin, db.Model):
     def validate(self):
         """Validações customizadas"""
         errors = []
+
+        print(f"DEBUG: Valor de self.status antes da validação: '{self.status}'")
+        if self.status: # Adicionado para evitar erro se self.status for None
+            print(f"DEBUG: self.status.lower().strip(): '{self.status.lower().strip()}'")
+            print(f"DEBUG: VALID_STATUSES: {self.VALID_STATUSES}")
         
         # Validar nome
         if not self.name or len(self.name.strip()) < 3:
@@ -419,13 +427,18 @@ class ProjectStep(TimestampMixin, db.Model):
     def validate(self):
         """Validações customizadas"""
         errors = []
+
+        print(f"DEBUG STEP: Valor de self.status antes da validação: '{self.status}'")
+        if self.status:
+            print(f"DEBUG STEP: self.status.lower().strip(): '{self.status.lower().strip()}'")
+            print(f"DEBUG STEP: VALID_STATUSES: {self.VALID_STATUSES}")
         
         # Validar nome
         if not self.step_name or len(self.step_name.strip()) < 3:
             errors.append("Nome da etapa deve ter pelo menos 3 caracteres")
         
         # Validar status
-        if self.status not in self.VALID_STATUSES:
+        if not self.status or self.status.lower().strip() not in self.VALID_STATUSES:
             errors.append(f"Status deve ser um dos: {', '.join(self.VALID_STATUSES)}")
         
         # Validar número da etapa
