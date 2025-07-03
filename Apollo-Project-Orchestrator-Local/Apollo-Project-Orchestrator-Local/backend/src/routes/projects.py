@@ -100,6 +100,7 @@ def create_project():
     try:
         current_user_id = get_jwt_identity()
         data = request.get_json()
+        print("Recebendo dados para criar projeto:", data)
         
         # Validação dos campos obrigatórios
         required_fields = ['name', 'client', 'responsible', 'objective']
@@ -152,7 +153,8 @@ def create_project():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Erro interno do servidor'}), 500
+        print("Erro ao criar projeto:", e)
+        raise  # Isso faz o traceback aparecer no terminal
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()

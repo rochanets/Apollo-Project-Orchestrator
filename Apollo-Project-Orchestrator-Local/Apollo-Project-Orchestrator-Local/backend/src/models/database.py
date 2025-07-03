@@ -235,7 +235,6 @@ class Project(AuditMixin, db.Model):
             self.completed_at = datetime.utcnow()
     
     def get_next_step(self):
-        """Obter próxima etapa pendente"""
         return self.steps.filter_by(status='pending').order_by(ProjectStep.step_number).first()
     
     def validate(self):
@@ -250,12 +249,14 @@ class Project(AuditMixin, db.Model):
         if not self.objective or len(self.objective.strip()) < 10:
             errors.append("Objetivo deve ter pelo menos 10 caracteres")
         
-        # Validar status
-        if self.status not in self.VALID_STATUSES:
+        # Validar status (LINHA CORRIGIDA)
+        # Verifica se o status existe, converte para minúsculas e remove espaços, depois verifica se está na lista
+        if not self.status or self.status.lower().strip() not in self.VALID_STATUSES:
             errors.append(f"Status deve ser um dos: {', '.join(self.VALID_STATUSES)}")
         
-        # Validar prioridade
-        if self.priority not in self.VALID_PRIORITIES:
+        # Validar prioridade (LINHA CORRIGIDA)
+        # Verifica se a prioridade existe, converte para minúsculas e remove espaços, depois verifica se está na lista
+        if not self.priority or self.priority.lower().strip() not in self.VALID_PRIORITIES:
             errors.append(f"Prioridade deve ser uma das: {', '.join(self.VALID_PRIORITIES)}")
         
         # Validar datas

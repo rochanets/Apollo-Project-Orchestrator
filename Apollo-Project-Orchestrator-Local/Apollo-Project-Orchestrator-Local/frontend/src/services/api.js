@@ -75,34 +75,37 @@ export const ApiService = {
   },
 
   // Verify token
-    async verifyToken(token) {
-        try {
-          const response = await fetch(`${API_BASE_URL}/auth/verify`, {
-            method: 'POST', // Mudança importante: deve ser POST
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
+  async verifyToken(token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+        method: 'POST', // Mudança importante: deve ser POST
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-          if (!response.ok) {
-            const data = await response.json();
-            return { error: data.message || 'Token inválido' };
-          }
+      if (!response.ok) {
+        const data = await response.json();
+        return { error: data.message || 'Token inválido' };
+      }
 
-          const data = await response.json();
-          return {
-            success: true,
-            user: data.user
-          };
-        } catch (error) {
-          console.error('Token verification error:', error);
-          return { error: 'Erro de conexão com o servidor' };
-        }
-      },
+      const data = await response.json();
+      return {
+        success: true,
+        user: data.user
+      };
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return { error: 'Erro de conexão com o servidor' };
+    }
+  },
 
   // Projects
   async getProjects(token) {
+
+    // console.log('Fetching projects with token:', token);
+
     try {
       const response = await fetch(`${API_BASE_URL}/projects`, {
         headers: {
@@ -124,32 +127,35 @@ export const ApiService = {
   },
 
   async createProject(projectData, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/projects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(projectData),
-      });
+  try {
+    alert('Vai enviar para o backend: ' + JSON.stringify(projectData));
+    console.log('Vai enviar para o backend:', projectData);
 
-      const data = await response.json();
+    const response = await fetch(`${API_BASE_URL}/projects`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(projectData),
+    });
 
-      if (!response.ok) {
-        return { error: data.message || 'Erro ao criar projeto' };
-      }
+    const data = await response.json();
 
-      return {
-        success: true,
-        project: data.project,
-        message: data.message
-      };
-    } catch (error) {
-      console.error('Create project error:', error);
-      return { error: 'Erro de conexão com o servidor' };
+    if (!response.ok) {
+      return { error: data.message || 'Erro ao criar projeto' };
     }
-  },
+
+    return {
+      success: true,
+      project: data.project,
+      message: data.message
+    };
+  } catch (error) {
+    console.error('Create project error:', error);
+    return { error: 'Erro de conexão com o servidor' };
+  }
+},
 
   async updateProject(projectId, projectData, token) {
     try {
