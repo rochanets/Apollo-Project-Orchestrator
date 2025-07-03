@@ -37,7 +37,10 @@ def create_app(config_name=None):
     """
     
     app = Flask(__name__)
-    
+    # CORS correto: apenas esta linha!
+    from flask_cors import CORS
+    CORS(app, origins=['http://localhost:5173', 'http://localhost:3000'])
+
     # =============================================================================
     # CONFIGURAÇÃO
     # =============================================================================
@@ -58,7 +61,8 @@ def create_app(config_name=None):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app)
+    # REMOVA ou COMENTE esta linha para evitar conflito:
+    # cors.init_app(app)
     cache.init_app(app)
     limiter.init_app(app)
     mail.init_app(app)
@@ -257,13 +261,11 @@ def register_hooks(app):
         pass
     
     @app.after_request
-    def after_request(response):
-        """Executado após cada requisição"""
-        # Adicionar headers de segurança
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        
+    def add_cors_headers(response):
+        response.headers['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
         return response
     
     @app.teardown_appcontext

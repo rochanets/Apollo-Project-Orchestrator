@@ -8,19 +8,13 @@ import { X } from 'lucide-react';
 
 const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject }) => {
   const [formData, setFormData] = useState({
-    id: editingProject?.id || Date.now(),
     name: editingProject?.name || '',
     client: editingProject?.client || '',
     responsible: editingProject?.responsible || '',
     objective: editingProject?.objective || '',
     description: editingProject?.description || '',
-    priority: editingProject?.priority || 'medium',
-    status: editingProject?.status || 'active',
-    current_step: editingProject?.current_step || 0,
-    start_date: editingProject?.start_date || '',
-    deadline: editingProject?.deadline || '',
-    created_at: editingProject?.created_at || new Date().toISOString(),
-    uploaded_files: editingProject?.uploaded_files || []
+    priority: editingProject?.priority || 'medium'
+    // status será sempre 'active' no envio, não precisa aqui
   });
 
   const [errors, setErrors] = useState({});
@@ -56,7 +50,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
     if (formData.start_date && formData.deadline) {
       const startDate = new Date(formData.start_date);
       const deadlineDate = new Date(formData.deadline);
-      
+
       if (startDate >= deadlineDate) {
         newErrors.deadline = 'Prazo final deve ser posterior à data de início';
       }
@@ -68,13 +62,26 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+    console.log('handleSubmit chamado', formData);
+
     if (!validateForm()) {
       return;
     }
 
-    onProjectCreated(formData, !!editingProject);
-    onClose();
+    const cleanData = {
+      name: formData.name,
+      client: formData.client,
+      responsible: formData.responsible,
+      objective: formData.objective,
+      description: formData.description,
+      priority: formData.priority,
+      status: 'active',
+      start_date: formData.start_date,
+      deadline: formData.deadline
+    };
+
+    console.log('Enviando para onProjectCreated:', cleanData, !!editingProject);
+    onProjectCreated(cleanData, !!editingProject);
   };
 
   if (!isOpen) return null;
@@ -95,7 +102,7 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
             <X className="h-5 w-5" />
           </Button>
         </div>
-        
+
         <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -106,9 +113,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Ex: Sistema de Vendas"
-                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${
-                    errors.name ? 'border-red-500' : ''
-                  }`}
+                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${errors.name ? 'border-red-500' : ''
+                    }`}
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
@@ -120,9 +126,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
                   value={formData.client}
                   onChange={(e) => handleInputChange('client', e.target.value)}
                   placeholder="Ex: Empresa ABC"
-                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${
-                    errors.client ? 'border-red-500' : ''
-                  }`}
+                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${errors.client ? 'border-red-500' : ''
+                    }`}
                 />
                 {errors.client && <p className="text-red-500 text-sm mt-1">{errors.client}</p>}
               </div>
@@ -134,9 +139,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
                   value={formData.responsible}
                   onChange={(e) => handleInputChange('responsible', e.target.value)}
                   placeholder="Ex: João Silva"
-                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${
-                    errors.responsible ? 'border-red-500' : ''
-                  }`}
+                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${errors.responsible ? 'border-red-500' : ''
+                    }`}
                 />
                 {errors.responsible && <p className="text-red-500 text-sm mt-1">{errors.responsible}</p>}
               </div>
@@ -174,9 +178,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
                   type="date"
                   value={formData.deadline}
                   onChange={(e) => handleInputChange('deadline', e.target.value)}
-                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 ${
-                    errors.deadline ? 'border-red-500' : ''
-                  }`}
+                  className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 ${errors.deadline ? 'border-red-500' : ''
+                    }`}
                 />
                 {errors.deadline && <p className="text-red-500 text-sm mt-1">{errors.deadline}</p>}
               </div>
@@ -190,9 +193,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated, editingProject 
                 onChange={(e) => handleInputChange('objective', e.target.value)}
                 placeholder="Descreva o objetivo principal do projeto..."
                 rows={3}
-                className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${
-                  errors.objective ? 'border-red-500' : ''
-                }`}
+                className={`mt-1 border-orange-300 focus:border-orange-500 focus:ring-orange-500 text-orange-800 placeholder-orange-400 ${errors.objective ? 'border-red-500' : ''
+                  }`}
               />
               {errors.objective && <p className="text-red-500 text-sm mt-1">{errors.objective}</p>}
             </div>
