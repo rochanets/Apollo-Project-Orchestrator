@@ -156,6 +156,10 @@ def create_project():
     except Exception as e:
         db.session.rollback()
         print("Erro ao criar projeto:", e)
+
+        if isinstance(e, ValueError):
+            # Retorna um erro 400 com a mensagem de validação
+            return jsonify({'error': str(e)}), 400
         raise  # Isso faz o traceback aparecer no terminal
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
