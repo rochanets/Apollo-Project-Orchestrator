@@ -100,6 +100,7 @@ def create_project():
     try:
         current_user_id = get_jwt_identity()
         data = request.get_json()
+        print("Recebendo dados para criar projeto:", data)
         
         # Validação dos campos obrigatórios
         required_fields = ['name', 'client', 'responsible', 'objective']
@@ -115,11 +116,12 @@ def create_project():
             objective=data['objective'],
             description=data.get('description', ''),
             priority=data.get('priority', 'medium'),
+            status=data.get('status', 'active'),  # ADICIONE ESTA LINHA
             owner_id=current_user_id
         )
         
         db.session.add(project)
-        db.session.flush()  # Para obter o ID do projeto
+        db.session.flush()
         
         # Criar etapas padrão
         for step_data in DEFAULT_STEPS:
@@ -127,7 +129,8 @@ def create_project():
                 project_id=project.id,
                 step_number=step_data['step_number'],
                 step_name=step_data['step_name'],
-                description=step_data['description']
+                description=step_data['description'],
+                status=step_data.get('status', 'pending') # ADICIONE ESTA LINHA
             )
             db.session.add(step)
         
@@ -152,7 +155,8 @@ def create_project():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Erro interno do servidor'}), 500
+        print("Erro ao criar projeto:", e)
+        raise  # Isso faz o traceback aparecer no terminal
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()

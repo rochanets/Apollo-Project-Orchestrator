@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
-import { 
-  FolderOpen, 
-  Plus, 
+import {
+  FolderOpen,
+  Plus,
   Trash2,
   Edit,
   Calendar,
@@ -32,7 +32,7 @@ const projectSteps = [
 
 function App() {
   const { user, logout } = useAuth();
-  
+
   // Estados principais da aplicação
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -52,11 +52,12 @@ function App() {
         setBackendStatus('offline');
       }
     };
-    
+
     checkBackend();
     const interval = setInterval(checkBackend, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, []
+  );
 
   // Carregar projetos do usuário
   useEffect(() => {
@@ -67,7 +68,10 @@ function App() {
     try {
       setLoading(true);
       const token = localStorage.getItem('apollo_token');
-      
+
+      console.log('Loading projects with token:', token);
+
+
       if (!token) {
         setProjects([]);
         setSelectedProject(null);
@@ -75,16 +79,16 @@ function App() {
       }
 
       const result = await ApiService.getProjects(token);
-      
+
       if (result.success) {
         setProjects(result.projects);
-        
+
         // Se há projetos e nenhum está selecionado, selecionar o primeiro
         if (result.projects.length > 0 && !selectedProject) {
           setSelectedProject(result.projects[0]);
           setCurrentStep(result.projects[0].current_step || 0);
         }
-        
+
         // Se o projeto selecionado não está mais na lista, selecionar o primeiro
         if (selectedProject && !result.projects.find(p => p.id === selectedProject.id)) {
           if (result.projects.length > 0) {
@@ -115,20 +119,24 @@ function App() {
   }, [selectedProject?.id]);
 
   const handleProjectCreated = async (projectData, isEditing = false) => {
+    console.log('handleProjectCreated chamado', projectData, isEditing);
     const token = localStorage.getItem('apollo_token');
     
+
     try {
       let result;
-      
+
       if (isEditing) {
         result = await ApiService.updateProject(projectData.id, projectData, token);
       } else {
         result = await ApiService.createProject(projectData, token);
       }
-      
+
+
+
       if (result.success) {
         await loadUserProjects();
-        
+
         // Se for um novo projeto, selecionar automaticamente
         if (!isEditing && result.project) {
           setSelectedProject(result.project);
@@ -142,7 +150,7 @@ function App() {
       console.error('Erro ao salvar projeto:', error);
       alert('Erro de conexão ao salvar projeto');
     }
-    
+
     setShowCreateModal(false);
     setEditingProject(null);
   };
@@ -150,10 +158,10 @@ function App() {
   const handleDeleteProject = async (projectId) => {
     if (window.confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
       const token = localStorage.getItem('apollo_token');
-      
+
       try {
         const result = await ApiService.deleteProject(projectId, token);
-        
+
         if (result.success) {
           await loadUserProjects();
         } else {
@@ -180,14 +188,14 @@ function App() {
   const updateProjectStep = async (step) => {
     if (selectedProject) {
       const token = localStorage.getItem('apollo_token');
-      
+
       try {
         const result = await ApiService.updateProject(
-          selectedProject.id, 
-          { ...selectedProject, current_step: step }, 
+          selectedProject.id,
+          { ...selectedProject, current_step: step },
           token
         );
-        
+
         if (result.success) {
           await loadUserProjects();
         } else {
@@ -201,14 +209,14 @@ function App() {
 
   const handleProjectUpdate = async (updatedProject) => {
     const token = localStorage.getItem('apollo_token');
-    
+
     try {
       const result = await ApiService.updateProject(
-        updatedProject.id, 
-        updatedProject, 
+        updatedProject.id,
+        updatedProject,
         token
       );
-      
+
       if (result.success) {
         await loadUserProjects();
       }
@@ -375,16 +383,15 @@ function App() {
             {projects.map((project) => {
               const daysLeft = getDaysUntilDeadline(project.deadline);
               const isSelected = selectedProject && selectedProject.id === project.id;
-              
+
               return (
                 <div
                   key={project.id}
                   onClick={() => setSelectedProject(project)}
-                  className={`p-4 rounded-lg cursor-pointer transition-colors ${
-                    isSelected 
-                      ? 'bg-orange-100 border-2 border-orange-300' 
+                  className={`p-4 rounded-lg cursor-pointer transition-colors ${isSelected
+                      ? 'bg-orange-100 border-2 border-orange-300'
                       : 'bg-gray-800 hover:bg-gray-700 border-2 border-transparent'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className={`font-medium ${isSelected ? 'text-orange-900' : 'text-white'}`}>
@@ -398,11 +405,10 @@ function App() {
                           e.stopPropagation();
                           handleEditProject(project);
                         }}
-                        className={`h-6 w-6 p-0 ${
-                          isSelected 
-                            ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-200' 
+                        className={`h-6 w-6 p-0 ${isSelected
+                            ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-200'
                             : 'text-gray-400 hover:text-white hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
@@ -413,41 +419,38 @@ function App() {
                           e.stopPropagation();
                           handleDeleteProject(project.id);
                         }}
-                        className={`h-6 w-6 p-0 ${
-                          isSelected 
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100' 
+                        className={`h-6 w-6 p-0 ${isSelected
+                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
                             : 'text-gray-400 hover:text-red-400 hover:bg-gray-600'
-                        }`}
+                          }`}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
-                  
+
                   <p className={`text-sm mb-3 ${isSelected ? 'text-orange-700' : 'text-gray-300'}`}>
                     {project.client}
                   </p>
-                  
+
                   <div className="flex items-center space-x-2 mb-2">
                     <Calendar className={`h-3 w-3 ${isSelected ? 'text-orange-600' : 'text-gray-400'}`} />
                     <span className={`text-xs ${isSelected ? 'text-orange-700' : 'text-gray-400'}`}>
                       {formatDate(project.start_date)}
                     </span>
                     <Clock className={`h-3 w-3 ${isSelected ? 'text-orange-600' : 'text-gray-400'}`} />
-                    <span className={`text-xs ${
-                      daysLeft !== null && daysLeft < 7 
-                        ? 'text-red-500 font-medium' 
+                    <span className={`text-xs ${daysLeft !== null && daysLeft < 7
+                        ? 'text-red-500 font-medium'
                         : isSelected ? 'text-orange-700' : 'text-gray-400'
-                    }`}>
+                      }`}>
                       {daysLeft !== null ? `${daysLeft} dias` : 'Sem prazo'}
                       {daysLeft !== null && daysLeft < 0 && ' (Vencido)'}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      isSelected ? 'bg-orange-200 text-orange-800' : 'bg-gray-700 text-gray-300'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full ${isSelected ? 'bg-orange-200 text-orange-800' : 'bg-gray-700 text-gray-300'
+                      }`}>
                       Em andamento
                     </span>
                     <div className="flex items-center space-x-1">
