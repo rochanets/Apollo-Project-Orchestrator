@@ -1,4 +1,5 @@
 import os
+from xml.parsers.expat import errors
 print(f"DEBUG: Este arquivo database.py está em: {os.path.abspath(__file__)}")
 
 """
@@ -270,6 +271,9 @@ class Project(AuditMixin, db.Model):
         # Validar datas
         if self.start_date and self.end_date and self.start_date > self.end_date:
             errors.append("Data de início não pode ser posterior à data de fim")
+
+        if self.description and len(self.description.strip()) < 10:
+            errors.append("Descrição deve ter pelo menos 10 caracteres")
         
         if errors:
             raise ValueError('; '.join(errors))
@@ -342,7 +346,6 @@ class ProjectPermission(TimestampMixin, db.Model):
             'granted_by': self.granted_by,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
-
 
 class ProjectStep(TimestampMixin, db.Model):
     """Modelo de etapas do projeto com funcionalidades aprimoradas"""
