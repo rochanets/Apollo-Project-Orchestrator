@@ -16,92 +16,15 @@ sys.path.insert(0, str(root_dir))
 # Configurar variáveis de ambiente
 os.environ.setdefault('FLASK_ENV', 'development')
 
-try:
-    # Tentar usar o Application Factory se disponível
-    from src.app import create_app
-    from flask_cors import CORS
+from flask_cors import CORS
+from src.app import create_app
 
-    print("✅ Usando Application Factory (src.app.create_app)")
-    app = create_app()
+print("✅ Usando Application Factory (src.app.create_app)")
+app = create_app()
 
-    # Adicione o CORS aqui para garantir que será aplicado no app criado pela factory
-    CORS(app, origins=['http://localhost:5173', 'http://localhost:3000'])
+# Aplicar CORS após a criação do app
+CORS(app, origins=['http://localhost:5173', 'http://localhost:3000'])
 
-except ImportError:
-    # Fallback para estrutura simples se app.py não existir
-    print("⚠️  Application Factory não encontrado, usando estrutura simples")
-
-    from flask import Flask, jsonify
-    from flask_cors import CORS
-    from src.extensions import db
-
-    app = Flask(__name__)
-    app.config['CORS_ORIGINS'] = ['http://localhost:5173', 'http://localhost:3000']
-    CORS(app, origins=app.config['CORS_ORIGINS'])
-
-    # Configurações básicas
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'apollo-dev-secret-key-2025')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///apollo.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Inicializar extensões
-    db.init_app(app)
-
-    # Registrar blueprints se disponíveis
-    try:
-        from src.routes.ai import ai_bp
-        app.register_blueprint(ai_bp, url_prefix='/api/ai')
-        print("✅ Blueprint AI registrado")
-    except ImportError as e:
-        print(f"⚠️  Blueprint AI não disponível: {e}")
-
-    try:
-        from src.routes.projects import projects_bp
-        app.register_blueprint(projects_bp, url_prefix='/api/projects')
-        print("✅ Blueprint Projects registrado")
-    except ImportError as e:
-        print(f"⚠️  Blueprint Projects não disponível: {e}")
-
-    try:
-        from src.routes.users import users_bp
-        app.register_blueprint(users_bp, url_prefix='/api/users')
-        print("✅ Blueprint Users registrado")
-    except ImportError as e:
-        print(f"⚠️  Blueprint Users não disponível: {e}")
-
-    try:
-        from src.routes.auth import auth_bp
-        app.register_blueprint(auth_bp, url_prefix='/api/auth')
-        print("✅ Blueprint Auth registrado")
-    except ImportError as e:
-        print(f"⚠️  Blueprint Auth não disponível: {e}")
-
-    # Rotas básicas
-    @app.route('/')
-    @app.route('/health')
-    def health_check():
-        return jsonify({
-            'status': 'ok',
-            'message': 'Apollo Project Orchestrator está funcionando!',
-            'version': '1.0.0',
-            'environment': os.environ.get('FLASK_ENV', 'development')
-        })
-
-    @app.route('/api')
-    def api_info():
-        return jsonify({
-            'name': 'Apollo Project Orchestrator API',
-            'version': '1.0.0',
-            'status': 'running',
-            'endpoints': {
-                'health': '/',
-                'api_info': '/api',
-                'ai': '/api/ai',
-                'projects': '/api/projects',
-                'users': '/api/users',
-                'auth': '/api/auth'
-            }
-        })
 
 # Criar tabelas do banco de dados se necessário
 def init_database():

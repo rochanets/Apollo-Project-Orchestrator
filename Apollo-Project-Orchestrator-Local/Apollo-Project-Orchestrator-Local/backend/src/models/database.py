@@ -202,7 +202,8 @@ class Project(AuditMixin, db.Model):
     # Relacionamentos
     permissions = db.relationship('ProjectPermission', backref='project', lazy='dynamic', cascade='all, delete-orphan')
     steps = db.relationship('ProjectStep', backref='project', lazy='dynamic', cascade='all, delete-orphan', order_by='ProjectStep.step_number')
-    files = db.relationship('ProjectFile', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    uploaded_files = db.relationship('UploadedFile', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+
     
     # Status válidos
     VALID_STATUSES = ['active', 'paused', 'completed', 'cancelled', 'on_hold']
@@ -300,7 +301,9 @@ class Project(AuditMixin, db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'is_overdue': self.is_overdue
+            'is_overdue': self.is_overdue,
+            'uploaded_files': [f.to_dict() for f in self.uploaded_files]
+
         }
         
         if include_steps:
@@ -585,3 +588,25 @@ def update_project_completion(mapper, connection, target):
     """Atualizar completion do projeto quando etapa muda"""
     if target.project:
         target.project.update_completion_percentage()
+        
+class UploadedFile(db.Model):
+    __tablename__ = 'uploaded_files'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(512), nullable=False)
+    content_type = db.Column(db.String(128))
+    uploaded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'filename': self.filename,
+            'file_path': self.file_path,
+            'content_type': self.content_type,
+            'uploaded_by': self.uploaded_by,
+            'uploaded_at': self.uploaded_at.isoformat() if self.uploaded_at else None
+        }        

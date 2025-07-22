@@ -118,7 +118,7 @@ class DevelopmentConfig(Config):
     
     # Banco SQLite para desenvolvimento
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'sqlite:///{os.path.join(BASE_DIR, "apollo.db")}'
+    f'sqlite:///{os.path.join(BASE_DIR, "instance", "apollo.db")}'
     
     # Logs mais verbosos em desenvolvimento
     LOG_LEVEL = 'DEBUG'
