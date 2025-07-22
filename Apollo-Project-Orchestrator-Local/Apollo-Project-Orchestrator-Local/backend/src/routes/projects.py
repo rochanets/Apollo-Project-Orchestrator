@@ -156,6 +156,10 @@ def create_project():
     except Exception as e:
         db.session.rollback()
         print("Erro ao criar projeto:", e)
+
+        if isinstance(e, ValueError):
+            # Retorna um erro 400 com a mensagem de validação
+            return jsonify({'error': str(e)}), 400
         raise  # Isso faz o traceback aparecer no terminal
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
@@ -298,4 +302,62 @@ def update_project_step(project_id, step_number):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Erro interno do servidor'}), 500
+
+
+import os
+from werkzeug.utils import secure_filename
+from src.models.database import UploadedFile
+
+UPLOAD_FOLDER = 'uploads'  # ou o caminho onde os arquivos são salvos fisicamente
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@projects_bp.route('/<int:project_id>/upload', methods=['POST'])
+@jwt_required()
+def upload_file(project_id):
+    try:
+        current_user_id = get_jwt_identity()
+
+        if not has_project_permission(current_user_id, project_id, 'editor'):
+            return jsonify({'error': 'Acesso negado'}), 403
+
+        if 'file' not in request.files:
+            return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'Nome de arquivo inválido'}), 400
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+
+            uploaded_file = UploadedFile(
+                project_id=project_id,
+                filename=filename,
+                file_path=filepath,
+                content_type=file.content_type,
+                uploaded_by=current_user_id
+            )
+            db.session.add(uploaded_file)
+            db.session.commit()
+
+            project = Project.query.get(project_id)
+
+            return jsonify({
+                'message': 'Arquivo enviado com sucesso',
+                'project': project.to_dict()
+            }), 200
+
+        return jsonify({'error': 'Tipo de arquivo não permitido'}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao fazer upload: {e}")
+        return jsonify({'error': 'Erro interno ao fazer upload'}), 500
 

@@ -128,8 +128,6 @@ export const ApiService = {
 
   async createProject(projectData, token) {
   try {
-    alert('Vai enviar para o backend: ' + JSON.stringify(projectData));
-    console.log('Vai enviar para o backend:', projectData);
 
     const response = await fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',

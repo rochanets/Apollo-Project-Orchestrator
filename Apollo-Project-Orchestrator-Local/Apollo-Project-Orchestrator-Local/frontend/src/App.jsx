@@ -41,6 +41,7 @@ function App() {
   const [editingProject, setEditingProject] = useState(null);
   const [backendStatus, setBackendStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(''); // NOVO ESTADO PARA ERROS DA API
 
   // Verificação de status do backend
   useEffect(() => {
@@ -121,7 +122,7 @@ function App() {
   const handleProjectCreated = async (projectData, isEditing = false) => {
     console.log('handleProjectCreated chamado', projectData, isEditing);
     const token = localStorage.getItem('apollo_token');
-    
+    setApiError(''); // Limpa qualquer erro anterior ao tentar criar/editar
 
     try {
       let result;
@@ -132,27 +133,31 @@ function App() {
         result = await ApiService.createProject(projectData, token);
       }
 
-
-
       if (result.success) {
         await loadUserProjects();
 
-        // Se for um novo projeto, selecionar automaticamente
         if (!isEditing && result.project) {
           setSelectedProject(result.project);
           setCurrentStep(result.project.current_step || 0);
         }
+        setShowCreateModal(false); // Fecha o modal apenas no sucesso
+        setEditingProject(null);
       } else {
+        // Se result.success for false, mas não for um erro de rede
         console.error('Erro ao salvar projeto:', result.error);
-        alert(`Erro ao salvar projeto: ${result.error}`);
+        // Não usa alert aqui, mas define o erro no estado
+        setApiError(result.error || 'Erro desconhecido ao salvar projeto.'); 
+        // Não fecha o modal aqui para que o usuário veja o erro
+        throw new Error(result.error || 'Erro desconhecido ao salvar projeto.'); // Re-lança para o catch do modal
       }
     } catch (error) {
-      console.error('Erro ao salvar projeto:', error);
-      alert('Erro de conexão ao salvar projeto');
+      // Erro de rede (servidor offline, CORS, etc.)
+      console.error('Erro de conexão ao salvar projeto:', error);
+      // Não usa alert aqui, mas define o erro no estado
+      setApiError('Erro de conexão com o servidor. Verifique sua internet ou o status do backend.'); 
+      // Não fecha o modal aqui
+      throw error; // Re-lança para o catch do modal
     }
-
-    setShowCreateModal(false);
-    setEditingProject(null);
   };
 
   const handleDeleteProject = async (projectId) => {
@@ -312,8 +317,14 @@ function App() {
 
         <CreateProjectModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingProject(null);
+            setApiError(''); // Limpa o erro da API ao fechar o modal
+          }}
           onProjectCreated={handleProjectCreated}
+          apiError={apiError} // PASSA O ERRO PARA O MODAL
+          setApiError={setApiError} // PASSA A FUNÇÃO PARA LIMPAR O ERRO
         />
       </div>
     );
@@ -486,9 +497,12 @@ function App() {
         onClose={() => {
           setShowCreateModal(false);
           setEditingProject(null);
+          setApiError(''); // Limpa o erro da API ao fechar o modal
         }}
         onProjectCreated={handleProjectCreated}
         editingProject={editingProject}
+        apiError={apiError} // PASSA O ERRO PARA O MODAL
+        setApiError={setApiError} // PASSA A FUNÇÃO PARA LIMPAR O ERRO
       />
     </div>
   );

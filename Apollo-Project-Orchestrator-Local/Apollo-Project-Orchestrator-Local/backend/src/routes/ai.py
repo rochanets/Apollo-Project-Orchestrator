@@ -207,3 +207,33 @@ def health_check():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+import os  # <-- tem que estar no topo do arquivo
+
+@ai_bp.route('/upload-file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nome de arquivo inválido'}), 400
+
+    allowed_extensions = {'pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'}
+    filename = secure_filename(file.filename)
+    extension = filename.rsplit('.', 1)[-1].lower()
+
+    if extension not in allowed_extensions:
+        return jsonify({'error': f'Formato não permitido: .{extension}'}), 400
+
+    # 🚨 Salvar o arquivo
+    UPLOAD_DIR = os.path.join(os.path.dirname(__file__), '..', 'uploads')
+    os.makedirs(UPLOAD_DIR, exist_ok=True)  # cria se não existir
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    file.save(file_path)
+
+    print(f"Arquivo salvo em: {file_path}")  # 👈 log no terminal
+
+    return jsonify({'message': f'Arquivo {filename} recebido com sucesso'}), 200
+
+
